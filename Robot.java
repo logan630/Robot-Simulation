@@ -1,7 +1,5 @@
 package me.potts.robots;
 
-import javax.swing.text.Position;
-
 public class Robot {
 
     private Field field;
@@ -57,12 +55,12 @@ public class Robot {
         return new int[]{this.x,this.y};
     }
 
-    // TO DO: Implement LOS,
-    // Determine a list of all grid squares the path will pass through,
-    // Test if any of those squares are obstructed,
-    // Move the robot if none are
-
-    // UNFINISHED
+    // This is the single worst... THING I've ever written in Java
+    // DO NOT use this as an example of how to do anything, this is garbage
+    // It took me forever to figure out the logical way to do this, and when
+    // it came time to address edge cases, I was so burned out I just
+    // through together a ton of IF statements to handle them all
+    // This is bad. It's bad. I don't like it, and neither should you.
     public void drive(int x, int y) throws
             PositionOutOfBoundsException,
             ObstructedPathException
@@ -71,42 +69,95 @@ public class Robot {
             throw new PositionOutOfBoundsException("Path must be contained within the field.");
         }
 
-        double lineX = this.x;
-        double lineY = this.y;
+        int lineX = this.x;
+        int lineY = this.y;
 
-        double deltaX = Math.abs(x - lineX);
-        double deltaY = Math.abs(y - lineY);
+        // This is a stupidly inefficient way to account for these edge cases but it's been months and I'm tired
+        boolean horizontal = false;
+        boolean vertical = false;
 
-        double cellTotal = (1 + deltaX + deltaY)*2;
+        if(y - this.y == 0){
+            vertical = true;
+        }
 
-        // Increments are set to half integers because lines connect
-        // the centers of grid squares
-        double incrementX = (x > this.x) ? 0.5 : -0.5;
-        double incrementY = (y > this.y) ? 0.5 : -0.5;
+        if(x - this.x == 0) {
+            horizontal = true;
+        }
 
-        double error = deltaY - deltaX;
+        // The robot will enter new cells in a certain order according to the slope of the vector dictating its translation
+        // Let m be the slope in question. Then floor(m) will be the number of cells the robot enters when travelling in the-
+        // -y direction before entering another cell along the x axis.
 
-//        deltaX *= 2;
-//        deltaY *= 2;
+        double m;
 
-        for(; cellTotal > 0; --cellTotal) {
+        try {
+            m = (y - this.y) / (x - this.x);
+        } catch(ArithmeticException e) {
+            m = 0;
+        }
+        boolean xIncrement = false;
 
-            if(!this.field.getMap()[(int) lineY][(int) lineX].equals(FieldObjects.FREE_SPACE)&&(lineX==this.x&&lineY==this.y)) {
-                throw new ObstructedPathException("The robot hit an obstacle.");
+        if(m < 1) {
+            m = 1/m;
+            xIncrement = true;
+        }
+
+        m = Math.floor(m);
+
+        if(horizontal) {
+            for(;lineX < x; lineX++) {
+                this.field.placeRobot(lineX, lineY);
             }
+        }
 
-            if(error > 0) {
+        else if(vertical) {
+            for(; lineY < y; lineY++) {
+                this.field.placeRobot(lineX, lineY);
+            }
+        }
 
-                lineY += incrementY;
-                error += deltaX;
+        else {
+            while (lineX < x-1 && lineY < y-1) {
 
-            } else {
+                double placeholderM = m;
+                while (placeholderM >= 1) {
 
-                lineX += incrementX;
-                error -= deltaY;
+                    if (xIncrement) {
+                        if(lineX == x) {
+                            break;
+                        }
+                        if(!(lineX == this.x && lineY == this.y)) {
+                            this.field.placeRobot(++lineX, lineY);
+                        }
+                    } else {
+                        if(lineY == y){
+                            break;
+                        }
+                        if(!(lineX == this.x && lineY == this.y)) {
+                            this.field.placeRobot(lineX, ++lineY);
+                        }
+                    }
+                }
+
+                if (xIncrement) {
+                    if(lineY == y) {
+                        break;
+                    }
+                    if(!(lineX == this.x && lineY == this.y)) {
+                        this.field.placeRobot(lineX, ++lineY);
+                    }
+                } else {
+                    if(lineX == x) {
+                        break;
+                    }
+                    if(!(lineX == this.x && lineY == this.y)) {
+                        this.field.placeRobot(++lineX, lineY);
+                    }
+                }
+
+                placeholderM = m;
 
             }
-
         }
 
         this.x = x;

@@ -7,9 +7,16 @@ public class Main {
         Robot robot = preset1();
         System.out.println(robot.getField());
         try{
-            robot.drive(0,1);
+            robot.drive(0,2);
             robot.grab();
+            robot.drive(1,3);
+            robot.drive(3,1);
+            robot.drive(3,0);
+            robot.deposit();
+            robot.endTask();
         } catch(ObstructedPathException e) {
+            System.out.println(robot.getPosition()[0]);
+            System.out.println(robot.getPosition()[1]);
             System.out.println("The robot encountered an obstacle.");
         } catch(PositionOutOfBoundsException e) {
             System.out.println("The robot attempted to leave the field.");
